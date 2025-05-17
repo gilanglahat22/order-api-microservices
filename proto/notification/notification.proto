@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "github.com/order-api-microservices/proto/notification";
+
+import "google/protobuf/timestamp.proto";
+
+service NotificationService {
+  rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse) {}
+  rpc GetUserNotifications(GetUserNotificationsRequest) returns (GetUserNotificationsResponse) {}
+  rpc MarkNotificationAsRead(MarkNotificationAsReadRequest) returns (MarkNotificationAsReadResponse) {}
+  rpc SubscribeToNotifications(SubscribeToNotificationsRequest) returns (stream Notification) {}
+}
+
+message SendNotificationRequest {
+  string recipient_id = 1; // User or provider ID
+  string recipient_type = 2; // USER or PROVIDER
+  string notification_type = 3; // ORDER_CREATED, ORDER_CANCELLED, etc.
+  string title = 4;
+  string message = 5;
+  bytes payload = 6; // JSON-encoded additional details
+  string reference_id = 7; // e.g., order ID
+}
+
+message SendNotificationResponse {
+  bool success = 1;
+  string message = 2;
+  string notification_id = 3;
+}
+
+message GetUserNotificationsRequest {
+  string user_id = 1;
+  bool include_read = 2; // Whether to include already read notifications
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetUserNotificationsResponse {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+  int32 unread_count = 3;
+  int32 page = 4;
+  int32 limit = 5;
+}
+
+message MarkNotificationAsReadRequest {
+  string notification_id = 1;
+  string user_id = 2;
+}
+
+message MarkNotificationAsReadResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message SubscribeToNotificationsRequest {
+  string user_id = 1;
+  repeated string notification_types = 2; // Optional filter for specific notification types
+}
+
+message Notification {
+  string id = 1;
+  string recipient_id = 2;
+  string recipient_type = 3;
+  string notification_type = 4;
+  string title = 5;
+  string message = 6;
+  bytes payload = 7;
+  string reference_id = 8;
+  bool read = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp read_at = 11;
+} 

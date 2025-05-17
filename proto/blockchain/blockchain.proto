@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package blockchain;
+
+option go_package = "github.com/order-api-microservices/proto/blockchain";
+
+import "google/protobuf/timestamp.proto";
+
+service BlockchainService {
+  rpc RecordOrder(RecordOrderRequest) returns (RecordOrderResponse) {}
+  rpc VerifyOrder(VerifyOrderRequest) returns (VerifyOrderResponse) {}
+  rpc GetOrderHistory(GetOrderHistoryRequest) returns (GetOrderHistoryResponse) {}
+  rpc GetTransactionDetails(GetTransactionDetailsRequest) returns (GetTransactionDetailsResponse) {}
+}
+
+message RecordOrderRequest {
+  string order_id = 1;
+  string user_id = 2;
+  string provider_id = 3;
+  OrderData order_data = 4;
+  string signature = 5;
+}
+
+message OrderData {
+  string id = 1;
+  string user_id = 2;
+  string provider_id = 3;
+  OrderType order_type = 4;
+  OrderStatus status = 5;
+  Location pickup_location = 6;
+  Location destination_location = 7;
+  repeated OrderItem items = 8;
+  float total_price = 9;
+  float platform_fee = 10;
+  float provider_fee = 11;
+  string transaction_id = 12;
+  string payment_method = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+  bytes data_hash = 16;
+}
+
+message OrderItem {
+  string item_id = 1;
+  string name = 2;
+  int32 quantity = 3;
+  float price = 4;
+  map<string, string> properties = 5;
+}
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  string address = 3;
+}
+
+message RecordOrderResponse {
+  bool success = 1;
+  string transaction_hash = 2;
+  string block_number = 3;
+  string message = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message VerifyOrderRequest {
+  string order_id = 1;
+  string transaction_hash = 2;
+}
+
+message VerifyOrderResponse {
+  bool verified = 1;
+  string block_number = 2;
+  string block_hash = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  string message = 5;
+}
+
+message GetOrderHistoryRequest {
+  string order_id = 1;
+}
+
+message OrderHistoryItem {
+  string transaction_hash = 1;
+  string block_number = 2;
+  OrderStatus status = 3;
+  string updated_by = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  bytes data_hash = 6;
+}
+
+message GetOrderHistoryResponse {
+  string order_id = 1;
+  repeated OrderHistoryItem history = 2;
+  string message = 3;
+  bool success = 4;
+}
+
+message GetTransactionDetailsRequest {
+  string transaction_hash = 1;
+}
+
+message GetTransactionDetailsResponse {
+  string transaction_hash = 1;
+  string block_number = 2;
+  string block_hash = 3;
+  string from_address = 4;
+  string to_address = 5;
+  string contract_address = 6;
+  string data = 7;
+  string value = 8;
+  uint64 gas_used = 9;
+  google.protobuf.Timestamp timestamp = 10;
+  string status = 11;
+  string message = 12;
+  bool success = 13;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  ORDER_TYPE_RIDE = 1;
+  ORDER_TYPE_FOOD_DELIVERY = 2;
+  ORDER_TYPE_PACKAGE_DELIVERY = 3;
+  ORDER_TYPE_GROCERY_DELIVERY = 4;
+  ORDER_TYPE_SERVICE_BOOKING = 5;
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_CREATED = 1;
+  ORDER_STATUS_PAYMENT_PENDING = 2;
+  ORDER_STATUS_PAYMENT_COMPLETED = 3;
+  ORDER_STATUS_PROVIDER_ASSIGNED = 4;
+  ORDER_STATUS_PROVIDER_ACCEPTED = 5;
+  ORDER_STATUS_PROVIDER_REJECTED = 6;
+  ORDER_STATUS_IN_PROGRESS = 7;
+  ORDER_STATUS_PICKED_UP = 8;
+  ORDER_STATUS_IN_TRANSIT = 9;
+  ORDER_STATUS_ARRIVED = 10;
+  ORDER_STATUS_DELIVERED = 11;
+  ORDER_STATUS_COMPLETED = 12;
+  ORDER_STATUS_CANCELLED = 13;
+  ORDER_STATUS_REFUNDED = 14;
+  ORDER_STATUS_DISPUTED = 15;
+} 

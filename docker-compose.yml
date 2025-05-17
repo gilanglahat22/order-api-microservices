@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: orderdb,blockchain,providerdb,notificationdb,userdb,paymentdb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/create-multiple-postgres-dbs.sh:/docker-entrypoint-initdb.d/create-multiple-postgres-dbs.sh
+
+  ganache:
+    image: trufflesuite/ganache-cli:latest
+    ports:
+      - "8545:8545"
+    command: --deterministic --db=/ganache-db --mnemonic "order api microservices test mnemonic" --networkId 1337 --quiet
+    volumes:
+      - ganache-data:/ganache-db
+
+  order-service:
+    build:
+      context: .
+      dockerfile: ./services/order/Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: orderdb
+      DB_SSLMODE: disable
+      BLOCKCHAIN_SERVICE: blockchain-service:50052
+      PROVIDER_SERVICE: provider-service:50053
+    depends_on:
+      - postgres
+      - blockchain-service
+      - provider-service
+
+  blockchain-service:
+    build:
+      context: .
+      dockerfile: ./services/blockchain/Dockerfile
+    ports:
+      - "50052:50052"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: blockchain
+      DB_SSLMODE: disable
+      ETHEREUM_RPC_URL: http://ganache:8545
+    depends_on:
+      - postgres
+      - ganache
+
+  provider-service:
+    build:
+      context: .
+      dockerfile: ./services/provider/Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: providerdb
+      DB_SSLMODE: disable
+      NOTIFICATION_SERVICE: notification-service:50054
+    depends_on:
+      - postgres
+      - notification-service
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./services/notification/Dockerfile
+    ports:
+      - "50054:50054"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: notificationdb
+      DB_SSLMODE: disable
+    depends_on:
+      - postgres
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ORDER_SERVICE: order-service:50051
+      BLOCKCHAIN_SERVICE: blockchain-service:50052
+      PROVIDER_SERVICE: provider-service:50053
+      NOTIFICATION_SERVICE: notification-service:50054
+    depends_on:
+      - order-service
+      - blockchain-service
+      - provider-service
+      - notification-service
+
+volumes:
+  postgres-data:
+  ganache-data: 
